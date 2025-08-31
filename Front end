@@ -1,0 +1,127 @@
+// frontend/app/page.tsx
+"use client";
+import { useEffect, useState } from "react";
+
+type Task = {
+  id: number;
+  title: string;
+  description: string;
+  status: string;
+};
+
+export default function Home() {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [status, setStatus] = useState("pending");
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("");
+
+  const fetchTasks = async () => {
+    let url = `http://localhost:5000/tasks?search=${search}&status=${filter}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    setTasks(data);
+  };
+
+  useEffect(() => {
+    fetchTasks();
+  }, [search, filter]);
+
+  const addTask = async () => {
+    await fetch("http://localhost:5000/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, description, status }),
+    });
+    setTitle("");
+    setDescription("");
+    fetchTasks();
+  };
+
+  const deleteTask = async (id: number) => {
+    await fetch(`http://localhost:5000/tasks/${id}`, { method: "DELETE" });
+    fetchTasks();
+  };
+
+  return (
+    <div className="p-6 max-w-2xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">✅ Task Manager</h1>
+
+      {/* Add Task */}
+      <div className="space-y-2 mb-6">
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Task Title"
+          className="border p-2 w-full rounded"
+        />
+        <input
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Task Description"
+          className="border p-2 w-full rounded"
+        />
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          className="border p-2 w-full rounded"
+        >
+          <option value="pending">Pending</option>
+          <option value="in-progress">In-Progress</option>
+          <option value="completed">Completed</option>
+        </select>
+        <button
+          onClick={addTask}
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          Add Task
+        </button>
+      </div>
+
+      {/* Search + Filter */}
+      <div className="flex gap-2 mb-6">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="🔍 Search tasks"
+          className="border p-2 flex-1 rounded"
+        />
+        <select
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          className="border p-2 rounded"
+        >
+          <option value="">All</option>
+          <option value="pending">Pending</option>
+          <option value="in-progress">In-Progress</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
+
+      {/* Task List */}
+      <ul className="space-y-3">
+        {tasks.map((task) => (
+          <li
+            key={task.id}
+            className="flex justify-between items-center border p-3 rounded"
+          >
+            <div>
+              <h2 className="font-semibold">{task.title}</h2>
+              <p className="text-sm">{task.description}</p>
+              <span className="text-xs bg-gray-200 px-2 py-1 rounded">
+                {task.status}
+              </span>
+            </div>
+            <button
+              onClick={() => deleteTask(task.id)}
+              className="text-red-600 hover:underline"
+            >
+              Delete
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
